@@ -13,25 +13,29 @@ void get_URL(const string &host, const string &path) {
     // the computer whose name is in the "host" string,
     // then request the URL path given in the "path" string.
 
-    TCPSocket sock;
-    sock.connect(Address(host, "http"));
-    std::string request = "GET " + path + " HTTP/1.1\r\n" + "Host: " + host + "\r\n";
-    // request += "\r\n";
-    request += "Connection: close\r\n\r\n";
-    sock.write(request);
+    // Then you'll need to print out everything the server sends back,
+    // (not just one call to read() -- everything) until you reach
+    // the "eof" (end of file).
 
-    // If you don’t shut down your outgoing byte stream,
-    // the server will wait around for a while for you to send
-    // additional requests and won’t end its outgoing byte stream either.
-    // sock.shutdown(SHUT_WR);
+    TCPSocket socket;
+    socket.connect(Address(host, "http"));
 
     // Then you'll need to print out everything the server sends back,
     // (not just one call to read() -- everything) until you reach
     // the "eof" (end of file).
 
-    while (!sock.eof())
-        cout << sock.read();
-    sock.close();
+    // Send HTTP request to the server
+    socket.write("GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n");
+    // Tell the server that it's not going to send any more requests
+    socket.shutdown(SHUT_WR);
+
+    // Print out everything the server sends back
+    while (!socket.eof()) {
+        cout << socket.read();
+    }
+
+    // Close the socket
+    socket.close();
 
     // cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
     // cerr << "Warning: get_URL() has not been implemented yet.\n";
