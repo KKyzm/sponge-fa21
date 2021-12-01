@@ -8,7 +8,7 @@
 // You will need to add private members to the class declaration in `byte_stream.hh`
 
 template <typename... Targs>
-void DUMMY_CODE(Targs &&.../* unused */) {}
+void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
@@ -69,5 +69,4 @@ size_t ByteStream::bytes_written() const { return _bytes_written; }
 
 size_t ByteStream::bytes_read() const { return _bytes_read; }
 
-// size_t ByteStream::remaining_capacity() const { return _capacity - buffer_size(); }
 size_t ByteStream::remaining_capacity() const { return _capacity; }

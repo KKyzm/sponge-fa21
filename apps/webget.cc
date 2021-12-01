@@ -16,7 +16,6 @@ void get_URL(const string &host, const string &path) {
     TCPSocket sock;
     sock.connect(Address(host, "http"));
     std::string request = "GET " + path + " HTTP/1.1\r\n" + "Host: " + host + "\r\n";
-    // request += "\r\n";
     request += "Connection: close\r\n\r\n";
     sock.write(request);
 
