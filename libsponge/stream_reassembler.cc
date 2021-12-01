@@ -15,27 +15,35 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 using namespace std;
 
 StreamReassembler::StreamReassembler(const size_t capacity)
-    : _first_unread(0), _first_unassembled(0), _first_unacceptable(0), _index_of_eof(0), _eof(false), _output(capacity), _capacity(capacity) {}
+    : _first_unread (0)
+    , _first_unassembled (0)
+    , _first_unacquired (0)
+    , _first_unacceptable (capacity)
+    , _index_of_eof (0)
+    , _eof (false)
+    , _output (capacity)
+    , _capacity (capacity) {}
 
 //! \details This function accepts a substring (aka a segment) of bytes,
 //! possibly out-of-order, from the logical stream, and assembles any newly
 //! contiguous substrings and writes them into the output stream in order.
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
-    _first_unread = _first_unassembled + _output.remaining_capacity() - _capacity;
     _eof |= eof;
     if (eof)
         _index_of_eof = index + data.size();
-    
-    size_t real_head = 0;
-    size_t real_end = 0;
-    map<size_t, size_t> data_pieces{};
 
     if (data.size() == 0) {
         if (_eof && index == _first_unassembled)
             _output.end_input();
         return;
     }
-    
+
+    _first_unread = _first_unassembled + _output.remaining_capacity() - _capacity;
+    _first_unacceptable = _first_unread + _capacity;
+    size_t real_head = 0;
+    size_t real_end = 0;
+    map<size_t, size_t> data_pieces{};
+
     if (index + data.size() <= _first_unassembled)
         return;
     else {
@@ -52,21 +60,20 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
             real_head = max(gap_head, index);
             real_end = min(gap_end, index + data.size());
             data_pieces.insert(make_pair(real_head, real_end));
-            // break;
         }
-        if (index + data.size() > _first_unacceptable) {
-            real_head = max(_first_unacceptable, index);
+        if (index + data.size() > _first_unacquired) {
+            real_head = max(_first_unacquired, index);
             real_end = min(index + data.size(), _first_unread + _capacity);
             data_pieces.insert(make_pair(real_head, real_end));
         }
     }
-    
-    for (auto iter_pieces = data_pieces.begin(); iter_pieces != data_pieces.end(); iter_pieces++) {
-        real_head = iter_pieces->first;
-        real_end = iter_pieces->second;
+
+    for (auto iter_of_pieces = data_pieces.begin(); iter_of_pieces != data_pieces.end(); iter_of_pieces++) {
+        real_head = iter_of_pieces->first;
+        real_end = iter_of_pieces->second;
         string data_to_push = data.substr(real_head - index, real_end - real_head);
         _buf.insert(make_pair(real_head, StreamReassembler::sub_string(real_head, data_to_push)));
-        _first_unacceptable = max(_first_unacceptable, real_end);
+        _first_unacquired = max(_first_unacquired, real_end);
     }
 
     auto iter = _buf.begin();

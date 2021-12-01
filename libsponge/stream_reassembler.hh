@@ -33,6 +33,7 @@ class StreamReassembler {
 	std::map<size_t, sub_string> _buf{};
 	size_t _first_unread;
 	size_t _first_unassembled;
+  size_t _first_unacquired;
 	size_t _first_unacceptable;
   size_t _index_of_eof;
   size_t _eof;
