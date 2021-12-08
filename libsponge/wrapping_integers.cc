@@ -1,5 +1,8 @@
 #include "wrapping_integers.hh"
 
+#include <algorithm>
+#include <iostream>
+
 // Dummy implementation of a 32-bit wrapping integer
 
 // For Lab 2, please replace with a real implementation that passes the
@@ -13,10 +16,7 @@ using namespace std;
 //! Transform an "absolute" 64-bit sequence number (zero-indexed) into a WrappingInt32
 //! \param n The input absolute 64-bit sequence number
 //! \param isn The initial sequence number
-WrappingInt32 wrap(uint64_t n, WrappingInt32 isn) {
-    DUMMY_CODE(n, isn);
-    return WrappingInt32{0};
-}
+WrappingInt32 wrap(uint64_t n, WrappingInt32 isn) { return isn + static_cast<uint32_t>(n); }
 
 //! Transform a WrappingInt32 into an "absolute" 64-bit sequence number (zero-indexed)
 //! \param n The relative sequence number
@@ -29,6 +29,36 @@ WrappingInt32 wrap(uint64_t n, WrappingInt32 isn) {
 //! and the other stream runs from the remote TCPSender to the local TCPReceiver and
 //! has a different ISN.
 uint64_t unwrap(WrappingInt32 n, WrappingInt32 isn, uint64_t checkpoint) {
-    DUMMY_CODE(n, isn, checkpoint);
-    return {};
+    uint64_t absolute_seq = static_cast<uint64_t>(n.raw_value() - isn.raw_value());
+    if (checkpoint <= absolute_seq)
+        return absolute_seq;
+
+    absolute_seq += checkpoint & 0xFFFFFFFF00000000;
+    if (checkpoint > absolute_seq && checkpoint - absolute_seq > UINT32_MAX / 2) {
+        absolute_seq += UINT32_MAX;
+        absolute_seq++;
+    } else if (absolute_seq > checkpoint && absolute_seq - checkpoint > UINT32_MAX / 2) {
+        absolute_seq -= UINT32_MAX;
+        absolute_seq--;
+    }
+    return absolute_seq;
+
+    // WrappingInt32 absolute_low = WrappingInt32(n.raw_value() - isn.raw_value());
+    // if (checkpoint <= absolute_low.raw_value())
+    //     return static_cast<uint64_t>(absolute_low.raw_value());
+    //
+    // WrappingInt32 checkpoint_low = WrappingInt32(static_cast<uint32_t>(checkpoint));
+    // uint32_t tmp = absolute_low.raw_value() - checkpoint_low.raw_value();
+    // uint32_t delta = min(tmp, UINT32_MAX + 1 - tmp);
+    //
+    // if (absolute_low == checkpoint_low)
+    //     return checkpoint;
+    // else if ((absolute_low.raw_value() > checkpoint_low.raw_value() &&
+    //           absolute_low.raw_value() - checkpoint_low.raw_value() <= UINT32_MAX / 2) ||
+    //          (absolute_low.raw_value() < checkpoint_low.raw_value() &&
+    //           checkpoint_low.raw_value() - absolute_low.raw_value() > UINT32_MAX / 2)) {
+    //     return checkpoint + delta;
+    // } else {
+    //     return checkpoint - delta;
+    // }
 }

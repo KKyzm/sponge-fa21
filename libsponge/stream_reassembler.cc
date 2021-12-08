@@ -10,19 +10,19 @@
 // You will need to add private members to the class declaration in `stream_reassembler.hh`
 
 template <typename... Targs>
-void DUMMY_CODE(Targs &&... /* unused */) {}
+void DUMMY_CODE(Targs &&.../* unused */) {}
 
 using namespace std;
 
 StreamReassembler::StreamReassembler(const size_t capacity)
-    : _first_unread (0)
-    , _first_unassembled (0)
-    , _first_unacquired (0)
-    , _first_unacceptable (capacity)
-    , _index_of_eof (0)
-    , _eof (false)
-    , _output (capacity)
-    , _capacity (capacity) {}
+    : _first_unread(0)
+    , _first_unassembled(0)
+    , _first_unacquired(0)
+    , _first_unacceptable(capacity)
+    , _index_of_eof(0)
+    , _eof(false)
+    , _output(capacity)
+    , _capacity(capacity) {}
 
 //! \details This function accepts a substring (aka a segment) of bytes,
 //! possibly out-of-order, from the logical stream, and assembles any newly
@@ -83,6 +83,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
             _first_unassembled = iter->second.get_endIndex();
 
             if (_eof && (iter->second.get_endIndex() == _index_of_eof)) {
+                iter = _buf.erase(iter);
                 _output.end_input();
                 return;
             } else {
@@ -95,11 +96,11 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 }
 
 size_t StreamReassembler::unassembled_bytes() const {
-    size_t bytes_unasseml = 0;
+    size_t bytes_unassembled = 0;
     for (auto iter = _buf.cbegin(); iter != _buf.cend(); iter++) {
-        bytes_unasseml += ((iter->second).get_string()).size();
+        bytes_unassembled += ((iter->second).get_string()).size();
     }
-    return bytes_unasseml;
+    return bytes_unassembled;
 }
 
 bool StreamReassembler::empty() const { return unassembled_bytes() == 0; }

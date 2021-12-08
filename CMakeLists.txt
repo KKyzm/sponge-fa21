@@ -1,4 +1,5 @@
-cmake_minimum_required (VERSION 2.8.5)
+# cmake_minimum_required (VERSION 2.8.5)
+cmake_minimum_required(VERSION 2.8.5...3.21.4)
 cmake_policy (SET CMP0054 NEW)
 project (Sponge)
 

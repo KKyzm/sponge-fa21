@@ -4,44 +4,42 @@
 #include "byte_stream.hh"
 
 #include <cstdint>
-#include <string>
 #include <map>
+#include <string>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
 class StreamReassembler {
+    class sub_string {
+      private:
+        size_t _head_index;
+        size_t _end_index;
+        std::string _data;
 
-	class sub_string {
-	  private:
-		size_t _head_index;
-		size_t _end_index;
-		std::string _data;
+      public:
+        sub_string(size_t index, std::string str) : _head_index(index), _end_index(index + str.size()), _data(str) {}
 
-	  public:
-		sub_string(size_t index, std::string str) :
-			_head_index(index),
-			_end_index(index + str.size()),
-			_data(str) {}
-
-		size_t get_headIndex() { return _head_index; }
-		size_t get_endIndex() { return _end_index; }
-		const std::string &get_string() const { return _data; }
-	};
+        size_t get_headIndex() { return _head_index; }
+        size_t get_endIndex() { return _end_index; }
+        const std::string &get_string() const { return _data; }
+    };
 
   private:
     // Your code here -- add private members as necessary.
-	std::map<size_t, sub_string> _buf{};
-	size_t _first_unread;
-	size_t _first_unassembled;
-  size_t _first_unacquired;
-	size_t _first_unacceptable;
-  size_t _index_of_eof;
-  size_t _eof;
+    std::map<size_t, sub_string> _buf{};
+    size_t _first_unread;
+    size_t _first_unassembled;
+    size_t _first_unacquired;
+    size_t _first_unacceptable;
+    size_t _index_of_eof;
+    size_t _eof;
 
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
 
   public:
+    size_t get_first_unassembled() const { return this->_first_unassembled; }
+
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
     //! \note This capacity limits both the bytes that have been reassembled,
     //! and those that have not yet been reassembled.
