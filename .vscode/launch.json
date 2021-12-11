@@ -5,6 +5,63 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "lab3_check17",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/yaniru/Workshop/sponge/build/tests/send_extra",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "lab3_check14",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/yaniru/Workshop/sponge/build/tests/send_window",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "lab3_check12",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/yaniru/Workshop/sponge/build/tests/send_transmit",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "lab2_check10",
             "type": "cppdbg",
             "request": "launch",

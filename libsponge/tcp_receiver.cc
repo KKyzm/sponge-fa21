@@ -33,9 +33,6 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
         this->_fin = true;
     }
 
-    // if (seg.length_in_sequence_space() == static_cast<size_t>(seg_header.syn) + static_cast<size_t>(seg_header.fin))
-    //     return;
-
     // Checkpoint is the index of the last reassembled byte
     // while ack is the index of the first unassembled byte.
     uint64_t seg_checkpoint = static_cast<uint64_t>(this->_reassembler.get_first_unassembled() - 1) + 1;

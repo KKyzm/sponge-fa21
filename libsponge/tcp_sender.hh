@@ -22,9 +22,22 @@ class TCPSender {
 
     //! outbound queue of segments that the TCPSender wants sent
     std::queue<TCPSegment> _segments_out{};
+    std::queue<TCPSegment> _segments_outstanding{};
 
     //! retransmission timer for the connection
-    unsigned int _initial_retransmission_timeout;
+    const unsigned int _initial_retransmission_timeout;
+    unsigned int _retransmission_limiter;
+    unsigned int _retransmission_timer;
+    bool _timer_toggle;
+
+    unsigned int _consecutive_retransmissions;
+    size_t _window_size;
+    unsigned int _bytes_in_flight;
+    uint64_t _abs_ackno;
+    uint64_t _received_ackno;
+    bool _syn = false;
+    bool _fin = false;
+    bool _invoke = false;
 
     //! outgoing stream of bytes that have not yet been sent
     ByteStream _stream;
@@ -33,10 +46,27 @@ class TCPSender {
     uint64_t _next_seqno{0};
 
   public:
+    void timer_turn_up() {
+        this->_timer_toggle = true;
+        this->_retransmission_timer = 0;
+    }
+    void timer_turn_off() { this->_timer_toggle = false; }
+    // void timer_reset() { this->_retransmission_timer = 0; }
+    void RTO_mul2() { this->_retransmission_limiter *= 2; }
+    void RTO_reset() { this->_retransmission_limiter = this->_initial_retransmission_timeout; }
+    bool time_out() {
+        if (this->_retransmission_timer >= this->_retransmission_limiter && this->_timer_toggle)
+            return true;
+        else
+            return false;
+    }
+
     //! Initialize a TCPSender
     TCPSender(const size_t capacity = TCPConfig::DEFAULT_CAPACITY,
               const uint16_t retx_timeout = TCPConfig::TIMEOUT_DFLT,
               const std::optional<WrappingInt32> fixed_isn = {});
+
+    void send_segment(TCPSegment &seg);
 
     //! \name "Input" interface for the writer
     //!@{
