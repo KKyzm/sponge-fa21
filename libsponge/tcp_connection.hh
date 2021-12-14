@@ -32,9 +32,28 @@ class TCPConnection {
     bool _linger_after_streams_finish{true};
 
   public:
-    void unclean_shutdown();
+    void unclean_shutdown(bool send_rst = true);
     void push_segments_out();
 
+    bool in_listen() { return !_receiver.ackno().has_value(); }
+    bool in_syn_recv() { return _receiver.ackno().has_value() && !_receiver.stream_out().input_ended(); }
+    bool in_fin_recv() { return _receiver.stream_out().input_ended(); }
+    bool in_closed() { return _sender.next_seqno_absolute() == 0; }
+    bool in_syn_sent() {
+        return _sender.next_seqno_absolute() > 0 && _sender.next_seqno_absolute() == _sender.bytes_in_flight();
+    }
+    bool in_syn_acked() {
+        return (_sender.next_seqno_absolute() > _sender.bytes_in_flight() && !_sender.stream_in().eof()) ||
+               (_sender.stream_in().eof() && _sender.next_seqno_absolute() < _sender.stream_in().bytes_written() + 2);
+    }
+    bool in_fin_sent() {
+        return _sender.stream_in().eof() && _sender.next_seqno_absolute() == _sender.stream_in().bytes_written() + 2 &&
+               _sender.bytes_in_flight() > 0;
+    }
+    bool in_fin_acked() {
+        return _sender.stream_in().eof() && _sender.next_seqno_absolute() == _sender.stream_in().bytes_written() + 2 &&
+               _sender.bytes_in_flight() == 0;
+    }
     //! \name "Input" interface for the writer
     //!@{
 

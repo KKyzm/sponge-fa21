@@ -47,21 +47,24 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     // reset timer
     _time_since_last_segment_received = 0;
 
+    // check if the rst_flag work.
+    if (seg.header().rst && !in_listen()) {
+        unclean_shutdown(false);
+        return;
+    } else if (seg.header().rst && in_listen()) {
+        if (seg.header().ack)
+            unclean_shutdown(false);
+        return;
+    }
+
     // tells the _sender and _receiver what their care about
-    if (seg.length_in_sequence_space() > 0)
+    if (seg.length_in_sequence_space() > 0) {
         _receiver.segment_received(seg);
+    }
     if (seg.header().ack)
         _sender.ack_received(seg.header().ackno, seg.header().win);
     // handle sender's output segment.
     push_segments_out();
-
-    // after passing message_of_segment to sender and receiver,
-    // check if the rst_flag work.
-    if (seg.header().rst && _receiver.ackno().has_value()) {
-        unclean_shutdown();
-        return;
-    } else if (seg.header().rst && !_receiver.ackno().has_value())
-        return;
 
     // reply the ackno and window_size to peer
     if (_receiver.ackno().has_value()) {
@@ -155,16 +158,18 @@ TCPConnection::~TCPConnection() {
     }
 }
 
-void TCPConnection::unclean_shutdown() {
+void TCPConnection::unclean_shutdown(bool send_rst) {
     // set in/out_stream error flag
     _sender.stream_in().set_error();
     _receiver.stream_out().set_error();
 
-    // send_rst_segment
-    TCPSegment rst_segment;
-    rst_segment.header().seqno = _sender.next_seqno();
-    rst_segment.header().rst = true;
-    _segments_out.push(rst_segment);
+    if (send_rst) {
+        // send_rst_segment
+        TCPSegment rst_segment;
+        rst_segment.header().seqno = _sender.next_seqno();
+        rst_segment.header().rst = true;
+        _segments_out.push(rst_segment);
+    }
 
     // set TCPConnection active flag
     _active = false;
