@@ -46,12 +46,15 @@ class TCPSender {
     uint64_t _next_seqno{0};
 
   public:
+    bool fully_acked() const { return _abs_ackno >= _next_seqno; }
+    bool get_fin() { return _fin; }
+
+    unsigned int get_timer() const { return _retransmission_timer; }
     void timer_turn_up() {
         _timer_toggle = true;
         _retransmission_timer = 0;
     }
     void timer_turn_off() { _timer_toggle = false; }
-    // void timer_reset() { _retransmission_timer = 0; }
     void RTO_mul2() { _retransmission_limiter *= 2; }
     void RTO_reset() { _retransmission_limiter = _initial_retransmission_timeout; }
     bool time_out() {

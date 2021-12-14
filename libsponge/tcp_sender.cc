@@ -43,7 +43,6 @@ void TCPSender::fill_window() {
         return;
     }
 
-    // size_t real_window_size = max(_window_size, static_cast<size_t>(1));
     size_t real_window_size = _window_size;
     if (real_window_size == 0 && _invoke) {
         _invoke = false;
@@ -54,12 +53,8 @@ void TCPSender::fill_window() {
             invoke_seg.header().fin = true;
         else
             return;
-        // invoke_seg.payload() = Buffer(std::move("t"));
 
-        // _next_seqno--;
-        // invoke_seg.header().seqno = wrap(_abs_ackno - 1, _isn);
         invoke_seg.set_invoke();
-        // _segments_out.push(invoke_seg);
         send_segment(invoke_seg);
     } else if (real_window_size == 0 && !_invoke) {
         return;
@@ -119,7 +114,8 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 
     _window_size = window_size;
 
-    _invoke = true;
+    if (window_size == 0)
+        _invoke = true;
     fill_window();
 
     if (_segments_outstanding.empty())
@@ -136,8 +132,6 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
         TCPSegment seg_retrans = _segments_outstanding.front();
         _segments_out.push(seg_retrans);
         _consecutive_retransmissions++;
-        // if (seg_retrans.length_in_sequence_space() > 1 || seg_retrans.header().syn || seg_retrans.header().fin)
-        // if (!(seg_retrans.length_in_sequence_space() == 1 && !seg_retrans.header().syn))
         if (!seg_retrans.get_invoke())
             RTO_mul2();
         timer_turn_up();

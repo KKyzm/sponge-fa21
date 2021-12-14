@@ -13,6 +13,16 @@ class TCPConnection {
     TCPReceiver _receiver{_cfg.recv_capacity};
     TCPSender _sender{_cfg.send_capacity, _cfg.rt_timeout, _cfg.fixed_isn};
 
+    bool _active = true;
+    bool _syn_sent = false;
+    bool _syn_received = false;
+
+    bool _inbound_end = false;
+    bool _outbound_end = false;
+    bool _outbound_acked = false;
+
+    size_t _time_since_last_segment_received = 0;
+
     //! outbound queue of segments that the TCPConnection wants sent
     std::queue<TCPSegment> _segments_out{};
 
@@ -22,6 +32,9 @@ class TCPConnection {
     bool _linger_after_streams_finish{true};
 
   public:
+    void unclean_shutdown();
+    void push_segments_out();
+
     //! \name "Input" interface for the writer
     //!@{
 
@@ -90,7 +103,7 @@ class TCPConnection {
     ~TCPConnection();  //!< destructor sends a RST if the connection is still open
     TCPConnection() = delete;
     TCPConnection(TCPConnection &&other) = default;
-    // TCPConnection &operator=(TCPConnection &&other) = default;
+    TCPConnection &operator=(TCPConnection &&other) = default;
     TCPConnection(const TCPConnection &other) = delete;
     TCPConnection &operator=(const TCPConnection &other) = delete;
     //!@}
