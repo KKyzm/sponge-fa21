@@ -47,15 +47,15 @@ class TCPSender {
 
   public:
     void timer_turn_up() {
-        this->_timer_toggle = true;
-        this->_retransmission_timer = 0;
+        _timer_toggle = true;
+        _retransmission_timer = 0;
     }
-    void timer_turn_off() { this->_timer_toggle = false; }
-    // void timer_reset() { this->_retransmission_timer = 0; }
-    void RTO_mul2() { this->_retransmission_limiter *= 2; }
-    void RTO_reset() { this->_retransmission_limiter = this->_initial_retransmission_timeout; }
+    void timer_turn_off() { _timer_toggle = false; }
+    // void timer_reset() { _retransmission_timer = 0; }
+    void RTO_mul2() { _retransmission_limiter *= 2; }
+    void RTO_reset() { _retransmission_limiter = _initial_retransmission_timeout; }
     bool time_out() {
-        if (this->_retransmission_timer >= this->_retransmission_limiter && this->_timer_toggle)
+        if (_retransmission_timer >= _retransmission_limiter && _timer_toggle)
             return true;
         else
             return false;

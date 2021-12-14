@@ -20,47 +20,46 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
 
     // Init ISN of this TCP connect receiver.
     if (seg_header.syn) {
-        if (this->_syn)
+        if (_syn)
             return;
-        this->_syn = true;
-        this->_isn = seg_header.seqno.raw_value();
-    } else if (!this->_syn)
+        _syn = true;
+        _isn = seg_header.seqno.raw_value();
+    } else if (!_syn)
         return;
 
     if (seg_header.fin) {
-        if (this->_fin)
+        if (_fin)
             return;
-        this->_fin = true;
+        _fin = true;
     }
 
     // Checkpoint is the index of the last reassembled byte
     // while ack is the index of the first unassembled byte.
-    uint64_t seg_checkpoint = static_cast<uint64_t>(this->_reassembler.get_first_unassembled() - 1) + 1;
+    uint64_t seg_checkpoint = static_cast<uint64_t>(_reassembler.get_first_unassembled() - 1) + 1;
     uint64_t index =
-        unwrap(seg_header.seqno + static_cast<uint32_t>(seg_header.syn), WrappingInt32(this->_isn), seg_checkpoint);
+        unwrap(seg_header.seqno + static_cast<uint32_t>(seg_header.syn), WrappingInt32(_isn), seg_checkpoint);
 
     // Only the part of the string that is subscripted after checkpoint is transmitted.
     if (index > 0) {
         index--;
-        this->_reassembler.push_substring(seg_body.copy(), index, seg_header.fin);
+        _reassembler.push_substring(seg_body.copy(), index, seg_header.fin);
     } else {
         if (((seg_checkpoint - index) + 1) < seg_body.copy().size())
-            this->_reassembler.push_substring(
+            _reassembler.push_substring(
                 seg_body.copy().substr((seg_checkpoint - index) + 1), seg_checkpoint, seg_header.fin);
         else
-            this->_reassembler.push_substring("", seg_checkpoint, seg_header.fin);
+            _reassembler.push_substring("", seg_checkpoint, seg_header.fin);
     }
     return;
 }
 
 optional<WrappingInt32> TCPReceiver::ackno() const {
-    if (this->_syn)
-        return WrappingInt32(static_cast<uint32_t>(this->_reassembler.get_first_unassembled() +
-                                                   static_cast<size_t>(this->_syn) +
-                                                   static_cast<size_t>(this->_reassembler.stream_out().input_ended())) +
-                             this->_isn);
+    if (_syn)
+        return WrappingInt32(static_cast<uint32_t>(_reassembler.get_first_unassembled() + static_cast<size_t>(_syn) +
+                                                   static_cast<size_t>(_reassembler.stream_out().input_ended())) +
+                             _isn);
     else
         return std::nullopt;
 }
 
-size_t TCPReceiver::window_size() const { return _capacity - this->_reassembler.stream_out().buffer_size(); }
+size_t TCPReceiver::window_size() const { return _capacity - _reassembler.stream_out().buffer_size(); }
