@@ -44,29 +44,26 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     if (!active())
         return;
 
+    // reset timer
     _time_since_last_segment_received = 0;
 
-    if (seg.header().rst) {
-        unclean_shutdown();
-        return;
-    }
-
-    if (!_syn_received) {
-        if (seg.header().syn == true)
-            _syn_received = true;
-        else
-            return;
-    }
-
+    // tells the _sender and _receiver what their care about
     if (seg.length_in_sequence_space() > 0)
         _receiver.segment_received(seg);
     if (seg.header().ack)
         _sender.ack_received(seg.header().ackno, seg.header().win);
+    // handle sender's output segment.
+    push_segments_out();
 
-    _inbound_end = _receiver.stream_out().input_ended();
-    _outbound_end = _sender.stream_in().input_ended();
-    _outbound_acked = _outbound_end & _sender.fully_acked();
+    // after passing message_of_segment to sender and receiver,
+    // check if the rst_flag work.
+    if (seg.header().rst && _receiver.ackno().has_value()) {
+        unclean_shutdown();
+        return;
+    } else if (seg.header().rst && !_receiver.ackno().has_value())
+        return;
 
+    // reply the ackno and window_size to peer
     if (_receiver.ackno().has_value()) {
         if (seg.length_in_sequence_space() > 0) {
             if (_sender.segments_out().empty())
@@ -79,12 +76,18 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         }
     }
 
+    // update states to prepare for clean shutdown
+    _inbound_end = _receiver.stream_out().input_ended();
+    _outbound_end = _sender.stream_in().input_ended();
+    _outbound_acked = _outbound_end & _sender.fully_acked();
+
     if (!_sender.get_fin() && seg.header().fin)
         _linger_after_streams_finish = false;
 
+    // clean shutdown if can
     if (_inbound_end && _outbound_end && _outbound_acked) {
-        if (!_linger_after_streams_finish ||
-            (_linger_after_streams_finish && time_since_last_segment_received() >= 10 * _cfg.rt_timeout))
+        if (!_linger_after_streams_finish)
+            // (_linger_after_streams_finish && time_since_last_segment_received() >= 10 * _cfg.rt_timeout)
             _active = false;
     }
 }
@@ -95,6 +98,7 @@ size_t TCPConnection::write(const string &data) {
     if (!active())
         return 0;
     size_t size = _sender.stream_in().write(data);
+    // handle sender's output segment
     _sender.fill_window();
     push_segments_out();
     return size;
@@ -106,13 +110,25 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
         return;
 
     _time_since_last_segment_received += ms_since_last_tick;
+    // clean shutdown if can
+    if (_inbound_end && _outbound_end && _outbound_acked) {
+        if (_linger_after_streams_finish && time_since_last_segment_received() >= 10 * _cfg.rt_timeout)
+            _active = false;
+    }
     _sender.tick(ms_since_last_tick);
     if (_sender.consecutive_retransmissions() > TCPConfig::MAX_RETX_ATTEMPTS) {
         unclean_shutdown();
     }
+    // handle sender's output segment
+    push_segments_out();
 }
 
-void TCPConnection::end_input_stream() { _sender.stream_in().end_input(); }
+void TCPConnection::end_input_stream() {
+    _sender.stream_in().end_input();
+    // handle sender's output segment
+    _sender.fill_window();
+    push_segments_out();
+}
 
 void TCPConnection::connect() {
     if (!active())
@@ -120,6 +136,7 @@ void TCPConnection::connect() {
 
     if (!_syn_sent) {
         _syn_sent = true;
+        // handle sender's output segment
         _sender.fill_window();
         push_segments_out();
     }
@@ -139,6 +156,7 @@ TCPConnection::~TCPConnection() {
 }
 
 void TCPConnection::unclean_shutdown() {
+    // set in/out_stream error flag
     _sender.stream_in().set_error();
     _receiver.stream_out().set_error();
 
@@ -148,5 +166,6 @@ void TCPConnection::unclean_shutdown() {
     rst_segment.header().rst = true;
     _segments_out.push(rst_segment);
 
+    // set TCPConnection active flag
     _active = false;
 }
