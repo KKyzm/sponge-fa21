@@ -46,6 +46,16 @@ class TCPSender {
     uint64_t _next_seqno{0};
 
   public:
+    bool send_syn() {
+        if (!_syn) {
+            TCPSegment synseg;
+            synseg.header().syn = true;
+            send_segment(synseg);
+            _syn = true;
+            return true;
+        } else
+            return false;
+    }
     bool fully_acked() const { return _abs_ackno >= _next_seqno; }
     bool get_fin() { return _fin; }
 

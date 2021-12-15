@@ -66,17 +66,22 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     // handle sender's output segment.
     push_segments_out();
 
-    // reply the ackno and window_size to peer
+    // reply syn if need
+    if (seg.header().syn) {
+        _sender.send_syn();
+        push_segments_out();
+    }
+
+    // reply the ackno and window_size to peer if need
     if (_receiver.ackno().has_value()) {
         if (seg.length_in_sequence_space() > 0) {
-            if (_sender.segments_out().empty())
+            if (_sender.segments_out().empty() && segments_out().empty())
                 _sender.send_empty_segment();
-            push_segments_out();
         } else if (seg.header().seqno.raw_value() < _receiver.ackno().value().raw_value()) {
-            if (_sender.segments_out().empty())
+            if (_sender.segments_out().empty() && segments_out().empty())
                 _sender.send_empty_segment();
-            push_segments_out();
         }
+        push_segments_out();
     }
 
     // update states to prepare for clean shutdown

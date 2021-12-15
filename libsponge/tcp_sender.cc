@@ -35,13 +35,8 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
 uint64_t TCPSender::bytes_in_flight() const { return _bytes_in_flight; }
 
 void TCPSender::fill_window() {
-    if (!_syn) {
-        TCPSegment synseg;
-        synseg.header().syn = true;
-        send_segment(synseg);
-        _syn = true;
+    if (send_syn())
         return;
-    }
 
     size_t real_window_size = _window_size;
     if (real_window_size == 0 && _invoke) {
