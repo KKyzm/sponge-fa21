@@ -25,6 +25,7 @@ class TCPReceiver {
     size_t _capacity;
 
   public:
+    bool get_fin() { return _fin; }
     //! \brief Construct a TCP receiver
     //!
     //! \param capacity the maximum number of bytes that the receiver will

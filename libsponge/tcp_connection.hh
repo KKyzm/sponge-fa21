@@ -33,27 +33,25 @@ class TCPConnection {
 
   public:
     void unclean_shutdown(bool send_rst = true);
+    void try_clean_shutdown() {
+        // update states to prepare for clean shutdown
+        _inbound_end = _receiver.stream_out().input_ended();
+        _outbound_end = _sender.stream_in().eof();
+        _outbound_acked = _sender.fully_acked();
+
+        if (!_sender.get_fin() && _receiver.get_fin())
+            _linger_after_streams_finish = false;
+
+        // clean shutdown if could
+        if (_inbound_end && _outbound_end && _outbound_acked)
+            if (!_linger_after_streams_finish || time_since_last_segment_received() >= 10 * _cfg.rt_timeout)
+                _active = false;
+    }
+
     void push_segments_out();
 
     bool in_listen() { return !_receiver.ackno().has_value(); }
-    bool in_syn_recv() { return _receiver.ackno().has_value() && !_receiver.stream_out().input_ended(); }
-    bool in_fin_recv() { return _receiver.stream_out().input_ended(); }
-    bool in_closed() { return _sender.next_seqno_absolute() == 0; }
-    bool in_syn_sent() {
-        return _sender.next_seqno_absolute() > 0 && _sender.next_seqno_absolute() == _sender.bytes_in_flight();
-    }
-    bool in_syn_acked() {
-        return (_sender.next_seqno_absolute() > _sender.bytes_in_flight() && !_sender.stream_in().eof()) ||
-               (_sender.stream_in().eof() && _sender.next_seqno_absolute() < _sender.stream_in().bytes_written() + 2);
-    }
-    bool in_fin_sent() {
-        return _sender.stream_in().eof() && _sender.next_seqno_absolute() == _sender.stream_in().bytes_written() + 2 &&
-               _sender.bytes_in_flight() > 0;
-    }
-    bool in_fin_acked() {
-        return _sender.stream_in().eof() && _sender.next_seqno_absolute() == _sender.stream_in().bytes_written() + 2 &&
-               _sender.bytes_in_flight() == 0;
-    }
+
     //! \name "Input" interface for the writer
     //!@{
 

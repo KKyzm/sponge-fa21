@@ -56,7 +56,7 @@ class TCPSender {
         } else
             return false;
     }
-    bool fully_acked() const { return _abs_ackno >= _next_seqno; }
+    bool fully_acked() const { return _abs_ackno == _next_seqno; }
     bool get_fin() { return _fin; }
 
     unsigned int get_timer() const { return _retransmission_timer; }
