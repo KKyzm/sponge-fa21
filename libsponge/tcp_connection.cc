@@ -59,12 +59,10 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         _receiver.segment_received(seg);
     if (seg.header().ack)
         _sender.ack_received(seg.header().ackno, seg.header().win);
-    push_segments_out();
 
     // reply syn if need
     if (seg.header().syn) {
         _sender.send_syn();
-        push_segments_out();
     }
 
     // reply the ackno and window_size to peer if need
@@ -74,8 +72,9 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
             if (_sender.segments_out().empty() && segments_out().empty())
                 _sender.send_empty_segment();
         }
-        push_segments_out();
     }
+    push_segments_out();
+    try_clean_shutdown();
 }
 
 bool TCPConnection::active() const { return _active; }
