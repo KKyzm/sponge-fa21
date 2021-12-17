@@ -42,44 +42,25 @@ void TCPSender::fill_window() {
         return;
 
     size_t real_window_size = _window_size;
-    if (real_window_size == 0 && _invoke) {
-        _invoke = false;
-        TCPSegment invoke_seg;
-        if (!stream_in().buffer_empty())
-            invoke_seg.payload() = stream_in().read(1);
-        else if (stream_in().eof())
-            invoke_seg.header().fin = true;
-        else
-            return;
+    real_window_size = (real_window_size) > 0 ? real_window_size : 1;
 
-        invoke_seg.set_invoke();
-        send_segment(invoke_seg);
-    } else if (real_window_size == 0 && !_invoke) {
-        return;
-    } else {
-        if (_received_ackno + real_window_size < _next_seqno)
-            return;
+    while (real_window_size > bytes_in_flight()) {
+        const size_t bytes_to_read = min(TCPConfig::MAX_PAYLOAD_SIZE, real_window_size - bytes_in_flight());
+        string str_tmp = stream_in().read(bytes_to_read);
 
-        if (_next_seqno > _received_ackno)
-            real_window_size -= (_next_seqno - _received_ackno);
+        TCPSegment mesg_seg_tmp;
+        mesg_seg_tmp.payload() = Buffer(std::move(str_tmp));
 
-        while (!_fin && real_window_size > 0) {
-            size_t bytes_to_read = min(TCPConfig::MAX_PAYLOAD_SIZE, real_window_size);
-            string str_tmp = stream_in().read(bytes_to_read);
-
-            TCPSegment mesg_seg_tmp;
-            mesg_seg_tmp.payload() = Buffer(std::move(str_tmp));
-
-            if (mesg_seg_tmp.length_in_sequence_space() < real_window_size && stream_in().eof()) {
-                mesg_seg_tmp.header().fin = true;
-                _fin = true;
-            }
-
-            if (mesg_seg_tmp.length_in_sequence_space() == 0)
-                return;
-            send_segment(mesg_seg_tmp);
-            real_window_size -= mesg_seg_tmp.length_in_sequence_space();
+        if (!_fin && mesg_seg_tmp.length_in_sequence_space() < real_window_size - bytes_in_flight() && stream_in().eof()) {
+            mesg_seg_tmp.header().fin = true;
+            _fin = true;
         }
+
+        if (mesg_seg_tmp.length_in_sequence_space() == 0)
+                return;
+        send_segment(mesg_seg_tmp);
+        if (mesg_seg_tmp.header().fin)
+            break;
     }
 }
 
@@ -93,8 +74,6 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     //  (the ackno reflects an absolute sequence number bigger than any previous ackno)
     if (_abs_ackno < _received_ackno) {
         _abs_ackno = _received_ackno;
-        RTO_reset();
-        _consecutive_retransmissions = 0;
 
         //! The TCPSender should look through its collection of outstanding segments
         //  and remove any that have now been fully acknowledged
@@ -107,16 +86,15 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
             if (seg_absno + seg_length <= _abs_ackno) {
                 _bytes_in_flight -= seg_tmp.length_in_sequence_space();
                 _segments_outstanding.pop();
+                _retransmission_limiter = _initial_retransmission_timeout;
                 timer_turn_up();
             } else
                 break;
         }
     }
-
+    _consecutive_retransmissions = 0;
     _window_size = window_size;
 
-    if (window_size == 0)
-        _invoke = true;
     fill_window();
 
     if (_segments_outstanding.empty())
@@ -133,8 +111,8 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
         TCPSegment seg_retrans = _segments_outstanding.front();
         _segments_out.push(seg_retrans);
         _consecutive_retransmissions++;
-        if (!seg_retrans.get_invoke())
-            RTO_mul2();
+        if (_window_size > 0 || seg_retrans.header().syn)
+            _retransmission_limiter *= 2;
         timer_turn_up();
     } else if (_segments_outstanding.empty()) {
         timer_turn_off();
@@ -154,8 +132,7 @@ void TCPSender::send_segment(TCPSegment &seg) {
     _next_seqno += seg.length_in_sequence_space();
     _bytes_in_flight += seg.length_in_sequence_space();
     _segments_out.push(seg);
-    if (seg.length_in_sequence_space() > 0)
-        _segments_outstanding.push(seg);
+    _segments_outstanding.push(seg);
     if (!_timer_toggle)
         timer_turn_up();
 }

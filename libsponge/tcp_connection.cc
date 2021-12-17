@@ -62,7 +62,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 
     // reply syn if need
     if (seg.header().syn) {
-        _sender.send_syn();
+        connect();
     }
 
     // reply the ackno and window_size to peer if need
@@ -99,12 +99,14 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
         unclean_shutdown();
     }
     push_segments_out();
+    try_clean_shutdown();
 }
 
 void TCPConnection::end_input_stream() {
     _sender.stream_in().end_input();
     _sender.fill_window();
     push_segments_out();
+    try_clean_shutdown();
 }
 
 void TCPConnection::connect() {
@@ -113,7 +115,8 @@ void TCPConnection::connect() {
 
     if (!_syn_sent) {
         _syn_sent = true;
-        _sender.send_syn();
+        _sender.fill_window();
+        _active = true;
         push_segments_out();
     }
 }

@@ -56,7 +56,7 @@ class TCPSender {
         } else
             return false;
     }
-    bool fully_acked() const { return _abs_ackno == _next_seqno; }
+    bool fully_acked() const { return bytes_in_flight() == 0; }
     bool get_fin() { return _fin; }
 
     unsigned int get_timer() const { return _retransmission_timer; }
@@ -65,14 +65,7 @@ class TCPSender {
         _retransmission_timer = 0;
     }
     void timer_turn_off() { _timer_toggle = false; }
-    void RTO_mul2() { _retransmission_limiter *= 2; }
-    void RTO_reset() { _retransmission_limiter = _initial_retransmission_timeout; }
-    bool time_out() {
-        if (_retransmission_timer >= _retransmission_limiter && _timer_toggle)
-            return true;
-        else
-            return false;
-    }
+    bool time_out() { return (_retransmission_timer >= _retransmission_limiter && _timer_toggle); }
 
     //! Initialize a TCPSender
     TCPSender(const size_t capacity = TCPConfig::DEFAULT_CAPACITY,

@@ -5,6 +5,69 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "connect",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/yaniru/Workshop/sponge/build/apps/tcp_ipv4",
+            "args": [
+                "-t 12 -w 1 -d tun144 -a 169.254.144.9"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "listen",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/yaniru/Workshop/sponge/build/apps/tcp_ipv4",
+            "args": [
+                "-t 12 -w 1 -d tun145 -a 169.254.145.9"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "type": "bashdb",
+            "request": "launch",
+            "name": "lab4_check_realenv",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/txrx.sh",
+            "args": [
+                "-isdD 16",
+                "-w 1"
+            ]
+        },
+        {
             "name": "lab4_check39",
             "type": "cppdbg",
             "request": "launch",
