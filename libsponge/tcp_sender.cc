@@ -38,6 +38,9 @@ void TCPSender::fill_window() {
     if (send_syn())
         return;
 
+    if (_fin)
+        return;
+
     size_t real_window_size = _window_size;
     if (real_window_size == 0 && _invoke) {
         _invoke = false;
@@ -67,7 +70,7 @@ void TCPSender::fill_window() {
             TCPSegment mesg_seg_tmp;
             mesg_seg_tmp.payload() = Buffer(std::move(str_tmp));
 
-            if (!_fin && mesg_seg_tmp.length_in_sequence_space() < real_window_size && stream_in().eof()) {
+            if (mesg_seg_tmp.length_in_sequence_space() < real_window_size && stream_in().eof()) {
                 mesg_seg_tmp.header().fin = true;
                 _fin = true;
             }
@@ -151,7 +154,8 @@ void TCPSender::send_segment(TCPSegment &seg) {
     _next_seqno += seg.length_in_sequence_space();
     _bytes_in_flight += seg.length_in_sequence_space();
     _segments_out.push(seg);
-    _segments_outstanding.push(seg);
+    if (seg.length_in_sequence_space() > 0)
+        _segments_outstanding.push(seg);
     if (!_timer_toggle)
         timer_turn_up();
 }
