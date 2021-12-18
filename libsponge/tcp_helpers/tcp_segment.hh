@@ -11,7 +11,6 @@ class TCPSegment {
   private:
     TCPHeader _header{};
     Buffer _payload{};
-    bool _invoke_flag = false;
 
   public:
     //! \brief Parse the segment from a string
@@ -32,9 +31,6 @@ class TCPSegment {
     //! \brief Segment's length in sequence space
     //! \note Equal to payload length plus one byte if SYN is set, plus one byte if FIN is set
     size_t length_in_sequence_space() const;
-
-    void set_invoke() { this->_invoke_flag = true; }
-    bool get_invoke() { return _invoke_flag; }
 };
 
 #endif  // SPONGE_LIBSPONGE_TCP_SEGMENT_HH
