@@ -14,7 +14,8 @@ void get_URL(const string &host, const string &path) {
     // the computer whose name is in the "host" string,
     // then request the URL path given in the "path" string.
 
-    CS144TCPSocket sock;
+    FullStackSocket sock;
+    // CS144TCPSocket sock;
     sock.connect(Address(host, "http"));
     std::string request = "GET " + path + " HTTP/1.1\r\n" + "Host: " + host + "\r\n";
     request += "Connection: close\r\n\r\n";
