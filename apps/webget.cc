@@ -32,7 +32,7 @@ void get_URL(const string &host, const string &path) {
 
     while (!sock.eof())
         cout << sock.read();
-    sock.close();
+    // sock.close();
 
     sock.wait_until_closed();
 
