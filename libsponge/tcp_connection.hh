@@ -120,7 +120,7 @@ class TCPConnection {
     ~TCPConnection();  //!< destructor sends a RST if the connection is still open
     TCPConnection() = delete;
     TCPConnection(TCPConnection &&other) = default;
-    TCPConnection &operator=(TCPConnection &&other) = default;
+    // TCPConnection &operator=(TCPConnection &&other) = default;
     TCPConnection(const TCPConnection &other) = delete;
     TCPConnection &operator=(const TCPConnection &other) = delete;
     //!@}
