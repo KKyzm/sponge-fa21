@@ -1,5 +1,7 @@
 #include "byte_stream.hh"
 
+#include <algorithm>
+
 // Dummy implementation of a flow-controlled in-memory byte stream.
 
 // For Lab 0, please replace with a real implementation that passes the
@@ -7,47 +9,67 @@
 
 // You will need to add private members to the class declaration in `byte_stream.hh`
 
-template <typename... Targs>
-void DUMMY_CODE(Targs &&... /* unused */) {}
-
 using namespace std;
 
-ByteStream::ByteStream(const size_t capacity) { DUMMY_CODE(capacity); }
+ByteStream::ByteStream(const size_t capacity) : _capacity(capacity) {}
 
 size_t ByteStream::write(const string &data) {
-    DUMMY_CODE(data);
-    return {};
+    // init return value
+    size_t num_bytes_written = 0;
+    // _capacity - _buffer.size() bytes at most can be written
+    size_t max_bytes_written = min(data.size(), _capacity - _buffer.size());
+
+    for (size_t i = 0; i < max_bytes_written; i++) {
+        _buffer.push_back(static_cast<std::byte>(data[i]));
+        num_bytes_written++;
+    }
+    _bytes_written += num_bytes_written;
+    return num_bytes_written;
 }
 
 //! \param[in] len bytes will be copied from the output side of the buffer
 string ByteStream::peek_output(const size_t len) const {
-    DUMMY_CODE(len);
-    return {};
+    size_t max_bytes_peek = min(len, _buffer.size());
+    std::string str_bytes_peek = "";
+
+    auto iter = _buffer.cbegin();
+    for (size_t i = 0; i < max_bytes_peek; i++) {
+        str_bytes_peek = str_bytes_peek + static_cast<char>(*(iter + i));
+    }
+
+    return str_bytes_peek;
 }
 
 //! \param[in] len bytes will be removed from the output side of the buffer
-void ByteStream::pop_output(const size_t len) { DUMMY_CODE(len); }
+void ByteStream::pop_output(const size_t len) {
+    size_t max_bytes_peek = min(len, _buffer.size());
+    for (size_t i = 0; i < max_bytes_peek; i++) {
+        _buffer.pop_front();
+    }
+    _bytes_read += max_bytes_peek;
+}
 
 //! Read (i.e., copy and then pop) the next "len" bytes of the stream
 //! \param[in] len bytes will be popped and returned
 //! \returns a string
 std::string ByteStream::read(const size_t len) {
-    DUMMY_CODE(len);
-    return {};
+    std::string str_bytes_read = peek_output(len);
+    pop_output(len);
+    return str_bytes_read;
 }
 
-void ByteStream::end_input() {}
+void ByteStream::end_input() { _end_input = true; }
 
-bool ByteStream::input_ended() const { return {}; }
+bool ByteStream::input_ended() const { return _end_input; }
 
-size_t ByteStream::buffer_size() const { return {}; }
+size_t ByteStream::buffer_size() const { return _buffer.size(); }
 
-bool ByteStream::buffer_empty() const { return {}; }
+bool ByteStream::buffer_empty() const { return _buffer.size() == 0; }
 
-bool ByteStream::eof() const { return false; }
+bool ByteStream::eof() const { return buffer_empty() && input_ended(); }
 
-size_t ByteStream::bytes_written() const { return {}; }
+size_t ByteStream::bytes_written() const { return _bytes_written; }
 
-size_t ByteStream::bytes_read() const { return {}; }
+size_t ByteStream::bytes_read() const { return _bytes_read; }
 
-size_t ByteStream::remaining_capacity() const { return {}; }
+size_t ByteStream::remaining_capacity() const { return _capacity - _buffer.size(); }

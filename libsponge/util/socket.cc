@@ -95,7 +95,7 @@ void UDPSocket::recv(received_datagram &datagram, const size_t mtu) {
     const ssize_t recv_len = SystemCall(
         "recvfrom",
         ::recvfrom(
-            fd_num(), datagram.payload.data(), datagram.payload.size(), MSG_TRUNC, datagram_source_address, &fromlen));
+            fd_num(), static_cast<void *>(datagram.payload.data()), datagram.payload.size(), MSG_TRUNC, datagram_source_address, &fromlen));
 
     if (recv_len > ssize_t(mtu)) {
         throw runtime_error("recvfrom (oversized datagram)");
