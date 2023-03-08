@@ -56,33 +56,17 @@ void StreamReassembler::fit_in_reassembler(string &data, size_t index) {
         return;
     }
 
-    //      @index|
-    //            *   |
-    //  data:     9 10|11 12 13 14 15 16 17 18 19 20 21 22 23
-    // _reasmer:  9 10|      13 14 15       18 19 20
-    //                |      *              *
-    //            ***   *    |              |
-    //              |   |    |@first        |@first
-    //              |   |
-    //              |   |
-    //              |   |@next_index
-    //              |
-    //              |
-    //              |(bytes that have pushed into output)
-    //
-    // @index always points to the index of the first byte of current @data
-    // @index_of_first_byte always points to the index of the first byte that is blank
-
-    for (auto iter = _reassembler.begin(); iter != _reassembler.end(); iter++) {
+    for (auto iter : _reassembler) {
         // return if no free space
         if (_num_bytes_free == 0)
             return;
 
-        auto data_idx_slot = resize_segment(data, index, next_index, (*iter).first);
+        auto data_idx_slot = resize_segment(data, index, next_index, iter.first);
         insert_in_reassembler(data_idx_slot.first, data_idx_slot.second);
 
-        // update relevant variables to prepare for the next loop
-        next_index = (*iter).first + (*iter).second.length();
+        // update relevant variable to prepare for the next loop
+        next_index = iter.first + iter.second.length();
+
         if (next_index >= index_data_end)
             break;
     }
