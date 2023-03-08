@@ -44,6 +44,11 @@ void StreamReassembler::fit_in_reassembler(string &data, size_t index) {
     auto data_idx_pre = resize_segment(data, index, next_index, next_index + _capacity_for_reassmbler);
     data = data_idx_pre.first;
     index = data_idx_pre.second;
+    size_t index_data_end = index + data.length();
+
+    if (data.length() == 0) {
+        return;
+    }
 
     // if reassembler is empty
     if (empty() == true) {
@@ -72,18 +77,14 @@ void StreamReassembler::fit_in_reassembler(string &data, size_t index) {
         // return if no free space
         if (_num_bytes_free == 0)
             return;
-        // return if data has been consumed completely
-        if (data.length() == 0)
-            return;
 
         auto data_idx_slot = resize_segment(data, index, next_index, (*iter).first);
-        // insert_in_reassembler(data_idx_slot.first, data_idx_slot.second);
-        size_t size_insert = insert_in_reassembler(data_idx_slot.first, data_idx_slot.second);
-        if (size_insert == 0 && next_index >= data_idx_slot.second)
-            break;
+        insert_in_reassembler(data_idx_slot.first, data_idx_slot.second);
 
         // update relevant variables to prepare for the next loop
         next_index = (*iter).first + (*iter).second.length();
+        if (next_index >= index_data_end)
+            break;
     }
 
     if (_num_bytes_free == 0)
