@@ -4,13 +4,22 @@
 #include "byte_stream.hh"
 
 #include <cstdint>
+#include <map>
 #include <string>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
 class StreamReassembler {
   private:
-    // Your code here -- add private members as necessary.
+    // map construct with default Compare = std::less<int>
+    // which means the elements will be sorted in ascending order by the value of the key
+    std::map<size_t, std::string> _reassembler{};
+    bool _eof = false;
+    size_t _eof_index{};
+    size_t _capacity_for_reassmbler{};
+    size_t _num_bytes_free{};
+    size_t _next_index = 0;  //!< The next index of byte to be pushed into _output
+                             // will only be changed in push_into_output()
 
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
@@ -30,6 +39,12 @@ class StreamReassembler {
     //! \param index indicates the index (place in sequence) of the first byte in `data`
     //! \param eof the last byte of `data` will be the last byte in the entire stream
     void push_substring(const std::string &data, const uint64_t index, const bool eof);
+
+    void fit_in_reassembler(std::string &data, size_t index);
+    void push_into_output();
+    std::pair<std::string, size_t> resize_segment(std::string &data, size_t index, size_t begin_index, size_t end_index);
+    size_t insert_in_reassembler(std::string data, size_t index);
+    void update_free_space();
 
     //! \name Access the reassembled byte stream
     //!@{
