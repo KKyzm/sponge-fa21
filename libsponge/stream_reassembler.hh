@@ -14,15 +14,29 @@ class StreamReassembler {
     // map construct with default Compare = std::less<int>
     // which means the elements will be sorted in ascending order by the value of the key
     std::map<size_t, std::string> _reassembler{};
-    bool _eof = false;
-    size_t _eof_index{};
-    size_t _capacity_for_reassmbler{};
-    size_t _num_bytes_free{};
-    size_t _next_index = 0;  //!< The next index of byte to be pushed into _output
-                             // will only be changed in push_into_output()
+    bool _eof = false;                  //!< Whether EOF flag is set
+    size_t _eof_index{};                //!< The index of EOF
+    size_t _capacity_for_reassmbler{};  //!< The number of bytes reassembler could hold
+    size_t _num_bytes_free{};           //!< The number of bytes could receive from the outside
+    size_t _next_index = 0;             //!< The next index of byte to be pushed into _output
 
-    ByteStream _output;  //!< The reassembled in-order byte stream
-    size_t _capacity;    //!< The maximum number of bytes
+    ByteStream _output;      //!< The reassembled in-order byte stream
+    const size_t _capacity;  //!< The maximum number of bytes
+
+    //! \brief Receive a substring and write any newly contiguous bytes into the reassembler.
+    void fit_in_reassembler(std::string &data, size_t index);
+
+    //! \brief Receive a substring and its index, insert them into reassembler.
+    size_t insert_in_reassembler(std::string data, size_t index);
+
+    //! \brief Push bytes in reassembler into stream if could.
+    void push_into_output();
+
+    //! \brief Receive a substring and Return the part between specified index.
+    std::pair<std::string, size_t> resize_segment(std::string &data, size_t idx, size_t b_idx, size_t e_idx);
+
+    //! \brief Update the information about free space, like _capacity_for_reassmbler and _num_bytes_free.
+    void update_free_space();
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
@@ -39,12 +53,6 @@ class StreamReassembler {
     //! \param index indicates the index (place in sequence) of the first byte in `data`
     //! \param eof the last byte of `data` will be the last byte in the entire stream
     void push_substring(const std::string &data, const uint64_t index, const bool eof);
-
-    void fit_in_reassembler(std::string &data, size_t index);
-    void push_into_output();
-    std::pair<std::string, size_t> resize_segment(std::string &data, size_t index, size_t begin_index, size_t end_index);
-    size_t insert_in_reassembler(std::string data, size_t index);
-    void update_free_space();
 
     //! \name Access the reassembled byte stream
     //!@{
