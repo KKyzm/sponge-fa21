@@ -14,39 +14,27 @@ using namespace std;
 ByteStream::ByteStream(const size_t capacity) : _capacity(capacity) {}
 
 size_t ByteStream::write(const string &data) {
-    // init return value
-    size_t num_bytes_written = 0;
-    // _capacity - _buffer.size() bytes at most can be written
-    size_t max_bytes_written = min(data.size(), _capacity - _buffer.size());
+    if (input_ended()) 
+        return 0;
 
-    for (size_t i = 0; i < max_bytes_written; i++) {
-        _buffer.push_back(static_cast<std::byte>(data[i]));
-        num_bytes_written++;
-    }
-    _bytes_written += num_bytes_written;
-    return num_bytes_written;
+    // _capacity - _buffer.size() bytes at most can be written
+    size_t max_bytes_written = min(data.size(), remaining_capacity());
+    _buffer.insert(_buffer.end(), data.begin(), data.begin() + max_bytes_written);
+    _bytes_written += max_bytes_written;
+    return max_bytes_written;
 }
 
 //! \param[in] len bytes will be copied from the output side of the buffer
 string ByteStream::peek_output(const size_t len) const {
     size_t max_bytes_peek = min(len, _buffer.size());
-    std::string str_bytes_peek = "";
-
-    auto iter = _buffer.cbegin();
-    for (size_t i = 0; i < max_bytes_peek; i++) {
-        str_bytes_peek = str_bytes_peek + static_cast<char>(*(iter + i));
-    }
-
-    return str_bytes_peek;
+    return string(_buffer.begin(), _buffer.begin() + max_bytes_peek);
 }
 
 //! \param[in] len bytes will be removed from the output side of the buffer
 void ByteStream::pop_output(const size_t len) {
-    size_t max_bytes_peek = min(len, _buffer.size());
-    for (size_t i = 0; i < max_bytes_peek; i++) {
-        _buffer.pop_front();
-    }
-    _bytes_read += max_bytes_peek;
+    size_t max_bytes_pop = min(len, _buffer.size());
+    _buffer.erase(_buffer.begin(), _buffer.begin() + max_bytes_pop);
+    _bytes_read += max_bytes_pop;
 }
 
 //! Read (i.e., copy and then pop) the next "len" bytes of the stream

@@ -19,7 +19,7 @@ class ByteStream {
     // different approaches.
 
     size_t _capacity;
-    std::deque<std::byte> _buffer{};
+    std::deque<char> _buffer{};
 
     bool _error = false;      //!< Flag indicating that the stream suffered an error.
     bool _end_input = false;  //!< Flag indicating that the input stream reached the ending.
