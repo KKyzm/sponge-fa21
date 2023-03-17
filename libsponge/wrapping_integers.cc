@@ -1,12 +1,7 @@
 #include "wrapping_integers.hh"
 
-// Dummy implementation of a 32-bit wrapping integer
-
 // For Lab 2, please replace with a real implementation that passes the
 // automated checks run by `make check_lab2`.
-
-template <typename... Targs>
-void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
@@ -30,7 +25,7 @@ WrappingInt32 wrap(uint64_t n, WrappingInt32 isn) {
 //! and the other stream runs from the remote TCPSender to the local TCPReceiver and
 //! has a different ISN.
 uint64_t unwrap(WrappingInt32 n, WrappingInt32 isn, uint64_t checkpoint) {
-    // allow overflow
+    // allow the minus operation to overflow
     uint64_t abs_seqno = n.raw_value() - isn.raw_value();
 
     const uint64_t MAX_U32 = (1ul << 32);

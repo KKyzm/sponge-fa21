@@ -2,8 +2,6 @@
 
 #include <algorithm>
 
-// Dummy implementation of a flow-controlled in-memory byte stream.
-
 // For Lab 0, please replace with a real implementation that passes the
 // automated checks run by `make check_lab0`.
 

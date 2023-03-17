@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <utility>
 
-// Dummy implementation of a stream reassembler.
-
 // For Lab 1, please replace with a real implementation that passes the
 // automated checks run by `make check_lab1`.
 
