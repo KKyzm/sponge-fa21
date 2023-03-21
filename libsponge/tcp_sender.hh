@@ -23,14 +23,44 @@ class TCPSender {
     //! outbound queue of segments that the TCPSender wants sent
     std::queue<TCPSegment> _segments_out{};
 
-    //! retransmission timer for the connection
+    //! queue of segments that waiting to be received
+    std::deque<std::pair<std::pair<uint64_t, bool>, TCPSegment>> _segments_outstanding{};
+
+    //! initial value of retransmission timer for the connection
+    unsigned int _init_timer_backup;
+
+    //! initial value of retransmission timer for the connection
     unsigned int _initial_retransmission_timeout;
+
+    //! retransmission timer for the connection
+    unsigned int _retransmission_timeout{0};
+
+    //! whether timer is enable
+    bool _timer_enable{false};
+
+    //! the number of consecutive retransmissions
+    unsigned int _consecutive_retransmissions_count{0};
 
     //! outgoing stream of bytes that have not yet been sent
     ByteStream _stream;
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+
+    //! the (absolute) sequence number for the next byte to be wanted by _receiver
+    uint64_t _last_ackno{0};
+
+    //! the window size of the receiver
+    uint64_t _window_size{1};
+
+    //! whether fin flag has been sent
+    bool _fin_sent{false};
+
+    void send_segment(TCPSegment &seg, bool window_zero_flag);
+
+    void remove_outstanding_segments();
+
+    void timeout_retransmission();
 
   public:
     //! Initialize a TCPSender
