@@ -43,11 +43,18 @@ void TCPSender::fill_window() {
         send_segment(seg, false);
     }
 
-    uint64_t num_bytes_to_send = _last_ackno + _window_size - _next_seqno;
+    uint64_t num_bytes_to_send;
+    if (_last_ackno + _window_size >= _next_seqno) {
+        num_bytes_to_send = _last_ackno + _window_size - _next_seqno;
+    } else {
+        num_bytes_to_send = 0;
+    }
+
     bool window_zero_flag = false;
-    if (_window_size == 0) {
+    if (_window_size == 0 && _window_zero_valid == true) {
         num_bytes_to_send++;
         window_zero_flag = true;
+        _window_zero_valid = false;
     }
 
     while (num_bytes_to_send > 0) {
@@ -74,6 +81,9 @@ void TCPSender::fill_window() {
 //! \param ackno The remote receiver's ackno (acknowledgment number)
 //! \param window_size The remote receiver's advertised window size
 void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) {
+    if (_next_seqno == 0)
+        return;
+
     // update the _last_ackno and _window_size
     uint64_t new_ackno = unwrap(ackno, _isn, _last_ackno);
     uint64_t new_window_size = window_size;
@@ -87,6 +97,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         _window_size = new_ackno + new_window_size - _last_ackno;
     } else {
         _window_size = 0;
+        _window_zero_valid = true;
     }
 
     remove_outstanding_segments();
@@ -111,6 +122,12 @@ unsigned int TCPSender::consecutive_retransmissions() const { return _consecutiv
 
 void TCPSender::send_empty_segment() {
     TCPSegment seg;
+    send_segment(seg, false);
+}
+
+void TCPSender::send_empty_segment_with_this_header(TCPHeader &header) {
+    TCPSegment seg;
+    seg.header() = header;
     send_segment(seg, false);
 }
 
