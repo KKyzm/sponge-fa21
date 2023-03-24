@@ -125,7 +125,7 @@ void TCPSender::send_empty_segment() {
     send_segment(seg, false);
 }
 
-void TCPSender::send_empty_segment_with_this_header(TCPHeader &header) {
+void TCPSender::send_empty_segment_with_this_header(TCPHeader header) {
     TCPSegment seg;
     seg.header() = header;
     send_segment(seg, false);
@@ -140,10 +140,10 @@ void TCPSender::send_segment(TCPSegment &seg, bool window_zero_flag) {
     _segments_out.push(seg);
 
     // do not retransmit empty segment
-    if (seg.length_in_sequence_space() != 0)
+    if (seg.length_in_sequence_space() != 0) {
+        _timer_enable = true;
         _segments_outstanding.push_back(make_pair(make_pair(abs_seqno, window_zero_flag), seg));
-
-    _timer_enable = true;
+    }
 }
 
 void TCPSender::remove_outstanding_segments() {
@@ -177,6 +177,13 @@ void TCPSender::remove_outstanding_segments() {
 }
 
 void TCPSender::timeout_retransmission() {
+    if (_segments_outstanding.empty() == true) {
+        _timer_enable = false;
+        _retransmission_timeout = 0;
+        _initial_retransmission_timeout = _init_timer_backup;
+        _consecutive_retransmissions_count = 0;
+        return;
+    }
     // retransmit the first outstanding segment
     bool window_zero_flag = _segments_outstanding.front().first.second;
     TCPSegment seg_timeout = _segments_outstanding.front().second;

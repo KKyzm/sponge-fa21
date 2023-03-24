@@ -48,14 +48,17 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     }
 
     // respond to keep-alive segment
-    if (_receiver.ackno().has_value() and (seg.length_in_sequence_space() == 0) and
+    if (_receiver.ackno().has_value() && (seg.length_in_sequence_space() == 0) &&
         seg.header().seqno == _receiver.ackno().value() - 1) {
         _sender.send_empty_segment();
     }
 
     // respond to any non-empty segments
-    if (seg.length_in_sequence_space() != 0 && _sender.segments_out().empty()) {
-        _sender.send_empty_segment();
+    if (seg.length_in_sequence_space() != 0) {
+        _sender.fill_window();
+        if (_sender.segments_out().empty()) {
+            _sender.send_empty_segment();
+        }
     }
 
     pop_and_send_segments();
@@ -65,11 +68,13 @@ bool TCPConnection::active() const {
     ByteStream outbound = _sender.stream_in();
     ByteStream inbound = _receiver.stream_out();
     if (outbound.eof() && inbound.eof()) {
-        if (_linger_after_streams_finish == false) {
-            return false;
-        } else {
-            return time_since_last_segment_received() >= 10 * _cfg.rt_timeout;
-        }
+        if (_sender.bytes_in_flight() == 0) {
+            if (_linger_after_streams_finish == false)
+                return false;
+            else
+                return time_since_last_segment_received() < 10 * _cfg.rt_timeout;
+        } else
+            return true;
     }
     if (outbound.error() || inbound.error())
         return false;
@@ -92,13 +97,21 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
     if (_sender.consecutive_retransmissions() > TCPConfig::MAX_RETX_ATTEMPTS) {
         positive_unclean_shutdown();
     }
+    pop_and_send_segments();
 
     _time_since_last_segment_received += ms_since_last_tick;
 }
 
-void TCPConnection::end_input_stream() { _sender.stream_in().end_input(); }
+void TCPConnection::end_input_stream() {
+    _sender.stream_in().end_input();
+    _sender.fill_window();
+    pop_and_send_segments();
+}
 
-void TCPConnection::connect() { _sender.fill_window(); }
+void TCPConnection::connect() {
+    _sender.fill_window();
+    pop_and_send_segments();
+}
 
 TCPConnection::~TCPConnection() {
     try {
@@ -112,16 +125,18 @@ TCPConnection::~TCPConnection() {
 }
 
 void TCPConnection::pop_and_send_segments() {
-    WrappingInt32 ackno = _receiver.ackno().value();
     numeric_limits<uint16_t> uint16_limit;
     size_t win_size = min(_receiver.window_size(), static_cast<size_t>(uint16_limit.max()));
 
-    queue<TCPSegment> _sender_segments_out = _sender.segments_out();
-    while (!_sender_segments_out.empty()) {
-        TCPSegment seg = _sender_segments_out.front();
-        _sender_segments_out.pop();
-        seg.header().ackno = ackno;
-        seg.header().win = static_cast<uint16_t>(win_size);
+    while (!_sender.segments_out().empty()) {
+        TCPSegment seg = _sender.segments_out().front();
+        _sender.segments_out().pop();
+        if (_receiver.ackno().has_value() && seg.header().ack == false) {
+            seg.header().ackno = _receiver.ackno().value();
+            seg.header().ack = true;
+        }
+        if (seg.header().win == TCPHeader().win)
+            seg.header().win = static_cast<uint16_t>(win_size);
         _segments_out.push(seg);
     }
 }
@@ -130,6 +145,9 @@ void TCPConnection::positive_unclean_shutdown() {
     // send empty segment with RST flag set
     TCPHeader header;
     header.rst = true;
+    while (!_sender.segments_out().empty()) {
+        _sender.segments_out().pop();
+    }
     _sender.send_empty_segment_with_this_header(header);
     pop_and_send_segments();
     // set both ByteStream to error state

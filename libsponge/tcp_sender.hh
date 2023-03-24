@@ -87,7 +87,7 @@ class TCPSender {
     void send_empty_segment();
 
     //! \brief Generate an empty-payload segment with specified header
-    void send_empty_segment_with_this_header(TCPHeader &header);
+    void send_empty_segment_with_this_header(TCPHeader header);
 
     //! \brief create and send segments to fill as much of the window as possible
     void fill_window();
