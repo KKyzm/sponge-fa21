@@ -5,6 +5,33 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "web_get",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/apps/webget",
+            "args": [
+                "cs144.keithw.org",
+                "/hasher/xyzzy"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "active_close",
             "type": "cppdbg",
             "request": "launch",
@@ -220,35 +247,5 @@
                 }
             ]
         },
-        {
-            "name": "webget",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/apps/webget",
-            "args": ["cs144.keithw.org", "/hello"],
-            "stopAtEntry": false,
-            "cwd": "${fileDirname}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "防止gdb打开标准库函数",
-                    "text": "-interpreter-exec console \"skip -rfu std::.*\"",
-                    "ignoreFailures": false
-                }
-            ]
-        }
-
     ]
 }

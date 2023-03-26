@@ -3,3 +3,5 @@
 /.cache
 /.vimrc.lua
 gmon.out
+.idea
+cmake-build-debug
